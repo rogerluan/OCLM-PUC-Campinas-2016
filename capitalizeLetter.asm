@@ -1,0 +1,34 @@
+TITLE	capitalizeLetter
+.MODEL	SMALL
+.STACK	100h
+.DATA
+	PROMPT DB "Digite uma letra minuscula: $"
+.CODE
+
+MAIN	PROC
+	
+	MOV AX, @DATA
+	MOV DS, AX
+	MOV AH, 9H
+	LEA DX, PROMPT
+	INT 21H
+
+	MOV AH, 1H
+	INT 21H
+
+	MOV BL, AL
+	SUB BL, 32D
+
+	MOV AH, 2H
+	MOV DL, '='
+	INT 21H
+	
+	MOV AH, 2H
+	MOV DL, BL
+	INT 21H
+
+	MOV AH, 4CH
+	INT 21H
+MAIN	ENDP
+
+END MAIN

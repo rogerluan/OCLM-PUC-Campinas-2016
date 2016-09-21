@@ -1,0 +1,14 @@
+TITLE Hello World Program
+.MODEL SMALL
+.STACK 100h
+.DATA
+	MENSAGEM DB "Hello World!$"
+.CODE
+	MOV AX, @DATA
+	MOV DS, AX
+	MOV AH, 9H
+	LEA DX, MENSAGEM
+	INT 21h
+	MOV AH, 4Ch
+	INT 21h
+END

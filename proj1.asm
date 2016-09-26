@@ -5,16 +5,17 @@ TITLE	proj1
     SYS_READ_CHAR equ 1 
     SYS_PRINT_STR equ 9
     SYS_PRINT_CHAR equ 2
-    SYS_INTERRUPT equ INT 21h
-    LF EQU 13, 10
     
-    PROMPT DB 'Escolha uma opcao:', LF, '$'
-    MENU DB '1 - AND', LF, '2 - OR', LF, '3 - XOR', LF, '4 - NOT', LF, '5 - Soma', LF, '6 - Subtracao', LF, '7 - Multiplicacao', LF, '8 - Divisao', LF, '9 - Mult por 2 N vezes', LF, '10 - Div por 2 N vezes', LF, '11 - Sair', LF, 'Opcao: $'
+    PROMPT DB 'Escolha uma opcao:', 10, '$'
+    MENU DB 'a - AND', 10, 'b - OR', 10, 'c - XOR', 10, 'd - NOT', 10, 'e - Soma', 10, 'f - Subtracao', 10, 'g - Multiplicacao', 10, 'h - Divisao', 10, 'i - Mult por 2 N vezes', 10, 'j - Div por 2 N vezes', 10, 'k - Sair', 10, 'Opcao: $'
 
-    BASE_CHOICE DB '', LF, 'Qual a base?', LF, '1 - Binario', LF, '2 - Decimal', LF, '3 - Hexadecimal', LF, 'Digite: $'
+    BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'A - Binario', 10, 'B - Decimal', 10, 'C - Hexadecimal', 10, 'Digite: $'
 
-    FIRST_INPUT DB '', LF, 'Digite um inteiro: $'
-    SECOND_INPUT DB '', LF, 'Digite outro inteiro: $'
+    FIRST_INPUT DB '', 10, 'Digite o primeiro operando na base escolhida: $'
+    SECOND_INPUT DB '', 10, 'Digite o segundo operando na base escolhida: $'
+    
+    NUM1 DW ?
+    OPERATOR DW ?
 
 .CODE
 
@@ -22,58 +23,56 @@ TITLE	proj1
     MOV DS, AX              ;initialize ds
     
 MAIN:
+    CALL CLEAR_SCREEN
     MOV     AH, SYS_PRINT_STR
     LEA     DX, PROMPT
-    SYS_INTERRUPT
+    INT     21h
 
     LEA     DX, MENU
-    SYS_INTERRUPT
+    INT     21h
 
     MOV     AH, SYS_READ_CHAR
-    SYS_INTERRUPT
+    INT     21h
     
-    CMP     AL, 1
+    CMP     AL, 'a'
     JE      FUNCTION_AND
-    CMP     AL, 2
+    CMP     AL, 'b'
     JE      FUNCTION_OR
-    CMP     AL, 3
+    CMP     AL, 'c'
     JE      FUNCTION_XOR
-    CMP     AL, 4
+    CMP     AL, 'd'
     JE      FUNCTION_NOT
-    CMP     AL, 5
+    CMP     AL, 'e'
     JE      FUNCTION_SUM
-    CMP     AL, 6
+    CMP     AL, 'f'
     JE      FUNCTION_SUB
-    CMP     AL, 7
+    CMP     AL, 'g'
     JE      FUNCTION_MULT
-    CMP     AL, 8
+    CMP     AL, 'h'
     JE      FUNCTION_DIV
-    CMP     AL, 9
+    CMP     AL, 'i'
     JE      FUNCTION_MULT_2X
-    CMP     AL, 10
+    CMP     AL, 'j'
     JE      FUNCTION_DIV_2X
-    CMP     AL, 11
+    CMP     AL, 'k'
     JE      SEMI_EXIT
     
     JMP     MAIN
     
-    
 FUNCTION_AND:
     
     CALL    INPUT_VALUES
-    AND     BX, AX
-    
-    ;as chamadas devem ler o valor de BX apenas
-    CMP     DL, 1
-    CALL    OUTPUT_BINARY
-    CMP     DL, 2
-    CALL    OUTPUT_DECIMAL
-    CMP     DL, 3
-    CALL    OUTPUT_HEXA
-    
-    JMP MAIN
+    AND     BX, NUM1
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
     
 FUNCTION_OR:
+    CALL    INPUT_VALUES
+    OR      BX, NUM1
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_XOR:
 
@@ -93,128 +92,222 @@ FUNCTION_DIV_2X:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; HELPER PROCEDURES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+SEMI_EXIT:
+    JMP EXIT
+
+PROC OPERATOR_INPUT_SWITCH
+    CMP     OPERATOR, 'a'
+    JE      INPUT_BINARY_JUMP
+    CMP     OPERATOR, 'b'
+    JE      INPUT_DECIMAL_JUMP
+    CMP     OPERATOR, 'c'
+    JE      INPUT_HEXA_JUMP
+    RET
+ENDP
+
+PROC OPERATOR_OUTPUT_SWITCH
+    CMP     OPERATOR, 'a'
+    JE      OUTPUT_BINARY_JUMP
+    CMP     OPERATOR, 'b'
+    JE      OUTPUT_DECIMAL_JUMP
+    CMP     OPERATOR, 'c'
+    JE      OUTPUT_HEXA_JUMP
+    RET
+ENDP
+
 PROC READ_CHAR ;o char lido vai estar em AL
     MOV     AH, SYS_READ_CHAR
-    SYS_INTERRUPT
-    RET     ;chamada para retornar do ponto onde foi chamado
+    INT     21h
+    RET
 ENDP
 
 PROC INPUT_VALUES
+    CALL    CLEAR_SCREEN
     MOV     AH, SYS_PRINT_STR
     LEA     DX, BASE_CHOICE
-    SYS_INTERRUPT
+    INT     21h
     
-    ;CALL    READ_CHAR
-    MOV     AH, SYS_READ_CHAR
-    SYS_INTERRUPT
+    CALL    READ_CHAR
     
     ;mostra a mensagem para o usuario inserir o primeiro operando
     MOV     AH, SYS_PRINT_STR
     LEA     DX, FIRST_INPUT
-    XOR     DX, DX ;zera DX
-    MOV     DL, AL ;armazena o conteudo de AL em DL para ser utilizado futuramente
+    INT     21h
     
-    CMP     DL, 1
-    CALL    INPUT_BINARY
-    CMP     DL, 2
-    CALL    INPUT_DECIMAL
-    CMP     DL, 3
-    CALL    INPUT_HEXA
+    CBW     ;AL -> AX
+    MOV     OPERATOR, AX
     
-    ;move o operando de BX para AX, para liberar o BX para ser utilizado novamente abaixo
-    MOV     AX, BX
+    CALL    OPERATOR_INPUT_SWITCH
+    
+    ;move o operando de BX para NUM1, para liberar o BX para ser utilizado novamente abaixo
+    MOV     NUM1, BX
     
     ;mostra a mensagem para o usuario inserir o segundo operando
     MOV     AH, SYS_PRINT_STR
     LEA     DX, SECOND_INPUT
+    INT     21h
     
-    CMP     DL, 1
-    CALL    INPUT_BINARY
-    CMP     DL, 2
-    CALL    INPUT_DECIMAL
-    CMP     DL, 3
-    CALL    INPUT_HEXA
-    
-    ;agora ha um operando em AX, e outro em BX.
+    CALL OPERATOR_INPUT_SWITCH
 
+    RET ;agora ha um operando em NUM1, e outro em BX.
+ENDP
+
+PROC CLEAR_SCREEN
+    PUSH AX 
+    MOV AH, 0
+    MOV AL, 3
+    INT 10h
+    POP AX
     RET
 ENDP
 
-SEMI_EXIT:
-    JMP EXIT
+INPUT_BINARY_JUMP: JMP INPUT_BINARY
+INPUT_DECIMAL_JUMP: JMP INPUT_DECIMAL
+INPUT_HEXA_JUMP: JMP INPUT_HEXA
+OUTPUT_BINARY_JUMP: JMP OUTPUT_BINARY
+OUTPUT_DECIMAL_JUMP: JMP OUTPUT_DECIMAL
+OUTPUT_HEXA_JUMP: JMP OUTPUT_HEXA
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INPUT PROCEDURES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PROC INPUT_BINARY ;o binario fica armazenado em BX
+PROC INPUT_BINARY ;o numero fica armazenado em BX
 
     MOV     CX, 16		;inicializa contador de dígitos
-    MOV     AH, 1		;função DOS para entrada pelo teclado
     XOR     BX, BX		;zera BX -> terá o resultado
-    SYS_INTERRUPT		;entra, caracter está no AL
+    MOV     AH, SYS_READ_CHAR		;função DOS para entrada pelo teclado
+    INT     21h		;entra, caracter está no AL
     INPUT_BINARY_WHILE:	
         CMP     AL, 13		;é CR?
         JE      INPUT_BINARY_END			;se sim, termina o WHILE
         SUB     AL, 48      ;se não, elimina 30h == 48 do caracter
         SHL	    BX, 1   	;abre espaço para o novo dígito
         OR      BL, AL  	;insere o dígito no LSB de BL
-                            ;entra novo caracter
+        INT     21h       ;entra novo caracter
     LOOP INPUT_BINARY_WHILE	;controla o máximo de 16 dígitos
     INPUT_BINARY_END:
         RET
 ENDP
 
-PROC INPUT_DECIMAL
-
+PROC INPUT_DECIMAL ;o numero fica armazenado em BX
+    PUSH    BX
+    PUSH 	CX
+    PUSH 	DX
+    XOR 	BX, BX
+    XOR 	CX, CX
+    CALL    READ_CHAR
+    CMP 	AL, '-'
+    JE 		INPUT_DECIMAL_NEGATIVE
+    CMP 	AL, '+'
+    JE 		INPUT_DECIMAL_POSITIVE
+    JMP 	INPUT_DECIMAL_NUM
+INPUT_DECIMAL_NEGATIVE:
+    MOV 	CX, 1
+INPUT_DECIMAL_POSITIVE:
+    INT     21h
+INPUT_DECIMAL_NUM:
+    AND 	AX, 000Fh
+    PUSH 	AX	
+    MOV 	AX, 10 	
+    MUL 	BX 			
+    POP 	BX 			
+    ADD 	BX, AX 
+    CALL    READ_CHAR
+    CMP 	AL, 13
+    JNE 	INPUT_DECIMAL_NUM 		
+    MOV 	AX, BX 		
+    CMP 	CX, 1 		
+    JNE 	INPUT_DECIMAL_EXIT 		
+    NEG 	AX 		
+INPUT_DECIMAL_EXIT:
+    POP 	DX
+    POP 	CX	
+    POP     BX
+    MOV     BX, AX
+    RET
 ENDP
 
-PROC INPUT_HEXA 
+PROC INPUT_HEXA ;o numero fica armazenado em BX
     XOR     BX, BX		;inicializa BX com zero
     MOV     CL, 4		;inicializa contador com 4
     CALL    READ_CHAR
     INPUT_HEXA_WHILE:	
-        CMP    AL, 13		;é o CR ?
-        JE     INPUT_HEXA_END
-        CMP    AL, 39h		;caracter número ou letra?
-        JG     INPUT_HEXA_LETTER		;caracter já está na faixa ASCII
-        AND    AL, 0Fh		;número: retira 30h do ASCII
-        JMP    INPUT_HEXA_SHIFT
+        CMP     AL, 13		;é o CR ?
+        JE      INPUT_HEXA_END
+        CMP     AL, 39h		;caracter número ou letra?
+        JG      INPUT_HEXA_LETTER		;caracter já está na faixa ASCII
+        AND     AL, 0Fh		;número: retira 30h do ASCII
+        JMP     INPUT_HEXA_SHIFT
     INPUT_HEXA_LETTER:	
-        SUB    AL, 37h		;converte letra para binário
+        SUB     AL, 37h		;converte letra para binário
     INPUT_HEXA_SHIFT:
-        SHL    BX, CL		;desloca BX 4 casas à esquerda
-        OR     BL, AL		;insere valor nos bits 0 a 3 de BX
-        SYS_INTERRUPT		;entra novo caracter
-        JMP    INPUT_HEXA_WHILE		;faz o laço até que haja CR
+        SHL     BX, CL		;desloca BX 4 casas à esquerda
+        OR      BL, AL		;insere valor nos bits 0 a 3 de BX
+        INT     21h		;entra novo caracter
+        JMP     INPUT_HEXA_WHILE		;faz o laço até que haja CR
     INPUT_HEXA_END:
         RET	
 ENDP
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OUTPUT PROCEDURES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-PROC OUTPUT_BINARY
+PROC OUTPUT_BINARY ;le o numero de BX
     MOV     CX, 16		;inicializa contador de bits
     MOV     AH, SYS_PRINT_CHAR		;prepara para exibir no monitor
     OUTPUT_BINARY_LOOP:
-        ROL     BX, 1		;desloca BX uma casa à esquerda
-        ;if CF = 0
-        JNC     PT2 		;salta se CF = 0
+        ROL     BX, 1	;desloca BX uma casa à esquerda
+        JNC     PT2 	;jump if CF = 0
         ;else
-        MOV     DL, 49		;como CF = 1
-        SYS_INTERRUPT 		;exibe na tela "1" = 31h = 49
+        MOV     DL, 49	;como CF = 1
+        INT     21h 	;exibe na tela "1" = 31h = 49
+        JMP     P1
     PT2:	
-        MOV     DL, 48		;como CF = 0
-        SYS_INTERRUPT		;exibe na tela "0" = 30h = 48
+        MOV     DL, 48	;como CF = 0
+        INT     21h		;exibe na tela "0" = 30h = 48
         ;end_if
+    P1:
         LOOP  OUTPUT_BINARY_LOOP		;repete 16 vezes
 ;end_for
 ENDP
 
-PROC OUTPUT_DECIMAL
-
+PROC OUTPUT_DECIMAL ;le o numero de BX
+    MOV     AX, BX
+    PUSH    AX
+    PUSH    BX
+    PUSH    CX
+    PUSH    DX
+    OR      AX, AX
+    JGE     OUTPUT_DECIMAL_PT1
+    PUSH    AX
+    MOV     DL, '-'
+    MOV     AH, 2h
+    INT     21h
+    POP     AX
+    NEG     AX    
+OUTPUT_DECIMAL_PT1:
+    XOR     CX, CX
+    MOV     BX, 10
+OUTPUT_DECIMAL_PT2:
+    XOR     DX, DX
+    DIV     BX
+    PUSH    DX
+    INC     CX  
+    OR      AX, AX
+    JNE     OUTPUT_DECIMAL_PT2
+    MOV     AH, 2h
+OUTPUT_DECIMAL_PT3:
+    POP     DX
+    ADD     DL, 30h
+    INT     21h
+    LOOP    OUTPUT_DECIMAL_PT3
+    POP     DX
+    POP     CX
+    POP     BX
+    POP     AX
+    RET           
 ENDP
 
-PROC OUTPUT_HEXA
-		;BX já contem número binário
+PROC OUTPUT_HEXA ;le o numero de BX
     MOV    CH, 4	;CH contador de caracteres hexa
     MOV    CL, 4	;CL contador de deslocamentos
     MOV    AH, SYS_PRINT_CHAR	;prepara exibição no monitor
@@ -235,16 +328,17 @@ PROC OUTPUT_HEXA
         ;end if
 
     OUTPUT_HEXA_PRINT:
-        SYS_INTERRUPT	    ;exibe
-        ROL    BX, CL   ;roda BX 4 casas para a direita
-        DEC    CH       ;decrementa o contador
-        JNZ    OUTPUT_HEXA_LOOP	    ;volta para o topo caso o contador nao seja zero
+        INT     21h	    ;exibe
+        ROL     BX, CL   ;roda BX 4 casas para a direita
+        DEC     CH       ;decrementa o contador
+        JNZ     OUTPUT_HEXA_LOOP	    ;volta para o topo caso o contador nao seja zero
+    RET
 ENDP
 
 
 
 EXIT:
-    MOV AH, 4CH ;exit program
-    SYS_INTERRUPT
+    MOV     AH, 4CH ;exit program
+    INT     21h
 
 END

@@ -9,7 +9,7 @@ TITLE	proj1
     PROMPT DB 'Escolha uma opcao:', 10, '$'
     MENU DB 'a - AND', 10, 'b - OR', 10, 'c - XOR', 10, 'd - NOT', 10, 'e - Soma', 10, 'f - Subtracao', 10, 'g - Multiplicacao', 10, 'h - Divisao', 10, 'i - Mult por 2 N vezes', 10, 'j - Div por 2 N vezes', 10, 'k - Sair', 10, 'Opcao: $'
 
-    BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'A - Binario', 10, 'B - Decimal', 10, 'C - Hexadecimal', 10, 'Digite: $'
+    BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'a - Binario', 10, 'b - Decimal', 10, 'c - Hexadecimal', 10, 'Digite: $'
 
     FIRST_INPUT DB '', 10, 'Digite o primeiro operando na base escolhida: $'
     SECOND_INPUT DB '', 10, 'Digite o segundo operando na base escolhida: $'
@@ -43,24 +43,22 @@ MAIN:
     CMP     AL, 'd'
     JE      FUNCTION_NOT
     CMP     AL, 'e'
-    JE      FUNCTION_SUM
+    JE      FUNCTION_SUM_JUMP
     CMP     AL, 'f'
-    JE      FUNCTION_SUB
+    JE      FUNCTION_SUB_JUMP
     CMP     AL, 'g'
-    JE      FUNCTION_MULT
+    JE      FUNCTION_MULT_JUMP
     CMP     AL, 'h'
-    JE      FUNCTION_DIV
+    JE      FUNCTION_DIV_JUMP
     CMP     AL, 'i'
-    JE      FUNCTION_MULT_2X
+    JE      FUNCTION_MULT_2X_JUMP
     CMP     AL, 'j'
-    JE      FUNCTION_DIV_2X
+    JE      FUNCTION_DIV_2X_JUMP
     CMP     AL, 'k'
-    JE      SEMI_EXIT
-    
+    JE      EXIT_JUMP
     JMP     MAIN
     
-FUNCTION_AND:
-    
+FUNCTION_AND:    
     CALL    INPUT_VALUES
     AND     BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -75,25 +73,82 @@ FUNCTION_OR:
     JMP     MAIN
 
 FUNCTION_XOR:
+    CALL    INPUT_VALUES
+    XOR     BX, NUM1
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_NOT:
 
+
+FUNCTION_SUM_JUMP: JMP FUNCTION_SUM
+FUNCTION_SUB_JUMP: JMP FUNCTION_SUB
+FUNCTION_MULT_JUMP: JMP FUNCTION_MULT
+FUNCTION_DIV_JUMP: JMP FUNCTION_DIV
+FUNCTION_MULT_2X_JUMP: JMP FUNCTION_MULT_2X
+FUNCTION_DIV_2X_JUMP: JMP FUNCTION_DIV_2X
+EXIT_JUMP: JMP EXIT
+
 FUNCTION_SUM:
+    CALL    INPUT_VALUES
+    ADD     BX, NUM1
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_SUB:
+    CALL    INPUT_VALUES
+    SUB     NUM1, BX
+    MOV     BX, NUM1
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_MULT:
+    CALL    INPUT_VALUES
+    MOV     AX, NUM1
+    MUL     BX
+    MOV     BX, AX
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_DIV:
+    CALL    INPUT_VALUES
+    MOV     AX, NUM1
+    CWD
+    DIV     BX
+    MOV     BX, AX
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_MULT_2X:
+    CALL    INPUT_VALUES
+    MOV     CX, NUM1
+    XOR     CH, CH ;zera a parte alta pra poder usar o CL abaixo
+ 
+    MOV     DX, BX
+    SHL     DX, CL
+    MOV     BX, DX
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 FUNCTION_DIV_2X:
+    CALL    INPUT_VALUES
+    MOV     CX, BX
+    XOR     CH, CH ;zera a parte alta pra poder usar o CL abaixo
+
+    MOV     DX, NUM1
+    SHR     DX, CL
+    MOV     BX, DX
+    CALL    OPERATOR_OUTPUT_SWITCH
+    CALL    READ_CHAR
+    JMP     MAIN
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; HELPER PROCEDURES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-SEMI_EXIT:
-    JMP EXIT
 
 PROC OPERATOR_INPUT_SWITCH
     CMP     OPERATOR, 'a'
@@ -283,7 +338,7 @@ PROC OUTPUT_DECIMAL ;le o numero de BX
     MOV     AH, 2h
     INT     21h
     POP     AX
-    NEG     AX    
+    NEG     AX
 OUTPUT_DECIMAL_PT1:
     XOR     CX, CX
     MOV     BX, 10
@@ -291,7 +346,7 @@ OUTPUT_DECIMAL_PT2:
     XOR     DX, DX
     DIV     BX
     PUSH    DX
-    INC     CX  
+    INC     CX
     OR      AX, AX
     JNE     OUTPUT_DECIMAL_PT2
     MOV     AH, 2h
@@ -304,7 +359,7 @@ OUTPUT_DECIMAL_PT3:
     POP     CX
     POP     BX
     POP     AX
-    RET           
+    RET
 ENDP
 
 PROC OUTPUT_HEXA ;le o numero de BX
@@ -334,8 +389,6 @@ PROC OUTPUT_HEXA ;le o numero de BX
         JNZ     OUTPUT_HEXA_LOOP	    ;volta para o topo caso o contador nao seja zero
     RET
 ENDP
-
-
 
 EXIT:
     MOV     AH, 4CH ;exit program

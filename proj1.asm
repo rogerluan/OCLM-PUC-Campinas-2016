@@ -11,8 +11,8 @@ TITLE	proj1
 
     BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'A - Binario', 10, 'B - Decimal', 10, 'C - Hexadecimal', 10, 'Digite: $'
 
-    FIRST_INPUT DB '', 10, 'Digite o primeiro operando na base escolhida: $'
-    SECOND_INPUT DB '', 10, 'Digite o segundo operando na base escolhida: $'
+    FIRST_INPUT DB '', 10, 'Digite o operando na base escolhida: $'
+    ;SECOND_INPUT DB '', 10, 'Digite o segundo operando na base escolhida: $'
     
     NUM1 DW ?
     OPERATOR DW ?
@@ -60,7 +60,9 @@ MAIN:
     JMP     MAIN
     
 FUNCTION_AND:
-    
+    CALL    INPUT_BASE
+    CALL    INPUT_VALUES
+    MOV     NUM1, BX ;NUM1 recebe BX, para liberar o registrador
     CALL    INPUT_VALUES
     AND     BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -68,6 +70,9 @@ FUNCTION_AND:
     JMP     MAIN
     
 FUNCTION_OR:
+    CALL    INPUT_BASE
+    CALL    INPUT_VALUES
+    MOV     NUM1, BX
     CALL    INPUT_VALUES
     OR      BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -102,7 +107,8 @@ PROC OPERATOR_INPUT_SWITCH
     JE      INPUT_DECIMAL_JUMP
     CMP     OPERATOR, 'c'
     JE      INPUT_HEXA_JUMP
-    RET
+
+    JMP     INPUT_BASE
 ENDP
 
 PROC OPERATOR_OUTPUT_SWITCH
@@ -121,35 +127,31 @@ PROC READ_CHAR ;o char lido vai estar em AL
     RET
 ENDP
 
-PROC INPUT_VALUES
+PROC  INPUT_BASE
     CALL    CLEAR_SCREEN
     MOV     AH, SYS_PRINT_STR
     LEA     DX, BASE_CHOICE
     INT     21h
-    
+
     CALL    READ_CHAR
+
+    CBW
+    MOV     OPERATOR, AX
+
+    RET
+ENDP
+
+PROC INPUT_VALUES
+    ;CALL    CLEAR_SCREEN
     
-    ;mostra a mensagem para o usuario inserir o primeiro operando
+    ;mostra a mensagem para o usuario inserir o operando
     MOV     AH, SYS_PRINT_STR
     LEA     DX, FIRST_INPUT
     INT     21h
     
-    CBW     ;AL -> AX
-    MOV     OPERATOR, AX
-    
     CALL    OPERATOR_INPUT_SWITCH
     
-    ;move o operando de BX para NUM1, para liberar o BX para ser utilizado novamente abaixo
-    MOV     NUM1, BX
-    
-    ;mostra a mensagem para o usuario inserir o segundo operando
-    MOV     AH, SYS_PRINT_STR
-    LEA     DX, SECOND_INPUT
-    INT     21h
-    
-    CALL OPERATOR_INPUT_SWITCH
-
-    RET ;agora ha um operando em NUM1, e outro em BX.
+    RET ;return in BX.
 ENDP
 
 PROC CLEAR_SCREEN

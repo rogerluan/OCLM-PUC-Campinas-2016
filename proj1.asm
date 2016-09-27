@@ -8,17 +8,13 @@ TITLE	proj1
     
     PROMPT DB 'Escolha uma opcao:', 10, '$'
     MENU DB 'a - AND', 10, 'b - OR', 10, 'c - XOR', 10, 'd - NOT', 10, 'e - Soma', 10, 'f - Subtracao', 10, 'g - Multiplicacao', 10, 'h - Divisao', 10, 'i - Mult por 2 N vezes', 10, 'j - Div por 2 N vezes', 10, 'k - Sair', 10, 'Opcao: $'
-
     BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'a - Binario', 10, 'b - Decimal', 10, 'c - Hexadecimal', 10, 'Digite: $'
-
     MSG_INPUT_VALUE DB '', 10, 'Digite o operando na base escolhida: $'
-    
     
     NUM1 DW ?
     OPERATOR DW ?
 
 .CODE
-
     MOV AX, @DATA           ;get data segment address
     MOV DS, AX              ;initialize ds
     

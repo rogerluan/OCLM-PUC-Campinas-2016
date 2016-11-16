@@ -8,17 +8,13 @@ TITLE	proj1
     
     PROMPT DB 'Escolha uma opcao:', 10, '$'
     MENU DB 'a - AND', 10, 'b - OR', 10, 'c - XOR', 10, 'd - NOT', 10, 'e - Soma', 10, 'f - Subtracao', 10, 'g - Multiplicacao', 10, 'h - Divisao', 10, 'i - Mult por 2 N vezes', 10, 'j - Div por 2 N vezes', 10, 'k - Sair', 10, 'Opcao: $'
-
     BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'a - Binario', 10, 'b - Decimal', 10, 'c - Hexadecimal', 10, 'Digite: $'
-
-    FIRST_INPUT DB '', 10, 'Digite o operando na base escolhida: $'
-    ;SECOND_INPUT DB '', 10, 'Digite o segundo operando na base escolhida: $'
+    MSG_INPUT_VALUE DB '', 10, 'Digite o operando na base escolhida: $'
     
     NUM1 DW ?
     OPERATOR DW ?
 
 .CODE
-
     MOV AX, @DATA           ;get data segment address
     MOV DS, AX              ;initialize ds
     
@@ -59,9 +55,6 @@ MAIN:
     JMP     MAIN
     
 FUNCTION_AND:
-    CALL    INPUT_BASE
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX ;NUM1 recebe BX, para liberar o registrador
     CALL    INPUT_VALUES
     AND     BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -69,9 +62,6 @@ FUNCTION_AND:
     JMP     MAIN
     
 FUNCTION_OR:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     OR      BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -79,9 +69,6 @@ FUNCTION_OR:
     JMP     MAIN
 
 FUNCTION_XOR:
-    CALL    INPUT_BASE
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     XOR     BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -90,7 +77,7 @@ FUNCTION_XOR:
 
 FUNCTION_NOT:
     CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
+    CALL    INPUT_VALUE
     NOT     BX
     CALL    OPERATOR_OUTPUT_SWITCH
     CALL    READ_CHAR
@@ -105,9 +92,6 @@ FUNCTION_DIV_2X_JUMP: JMP FUNCTION_DIV_2X
 EXIT_JUMP: JMP EXIT
 
 FUNCTION_SUM:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     ADD     BX, NUM1
     CALL    OPERATOR_OUTPUT_SWITCH
@@ -115,9 +99,6 @@ FUNCTION_SUM:
     JMP     MAIN
 
 FUNCTION_SUB:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     SUB     NUM1, BX
     MOV     BX, NUM1
@@ -126,9 +107,6 @@ FUNCTION_SUB:
     JMP     MAIN
 
 FUNCTION_MULT:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     MOV     AX, NUM1
     MUL     BX
@@ -138,9 +116,6 @@ FUNCTION_MULT:
     JMP     MAIN
 
 FUNCTION_DIV:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     MOV     AX, NUM1
     CWD
@@ -151,9 +126,6 @@ FUNCTION_DIV:
     JMP     MAIN
 
 FUNCTION_MULT_2X:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     MOV     CX, NUM1
     XOR     CH, CH ;zera a parte alta pra poder usar o CL abaixo
@@ -166,9 +138,6 @@ FUNCTION_MULT_2X:
     JMP     MAIN
 
 FUNCTION_DIV_2X:
-    CALL    INPUT_BASE 
-    CALL    INPUT_VALUES
-    MOV     NUM1, BX
     CALL    INPUT_VALUES
     MOV     CX, BX
     XOR     CH, CH ;zera a parte alta pra poder usar o CL abaixo
@@ -209,6 +178,15 @@ PROC READ_CHAR ;o char lido vai estar em AL
     RET
 ENDP
 
+PROC INPUT_VALUES
+    CALL    INPUT_BASE 
+    CALL    INPUT_VALUE
+    MOV     NUM1, BX ;NUM1 recebe BX, para liberar o registrador
+    CALL    INPUT_VALUE
+
+    RET
+ENDP
+
 PROC  INPUT_BASE
     CALL    CLEAR_SCREEN
     MOV     AH, SYS_PRINT_STR
@@ -223,12 +201,10 @@ PROC  INPUT_BASE
     RET
 ENDP
 
-PROC INPUT_VALUES
-    ;CALL    CLEAR_SCREEN
-    
+PROC INPUT_VALUE    
     ;mostra a mensagem para o usuario inserir o operando
     MOV     AH, SYS_PRINT_STR
-    LEA     DX, FIRST_INPUT
+    LEA     DX, MSG_INPUT_VALUE
     INT     21h
     
     CALL    OPERATOR_INPUT_SWITCH

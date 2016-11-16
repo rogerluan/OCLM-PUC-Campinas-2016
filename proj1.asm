@@ -268,7 +268,7 @@ PROC INPUT_BINARY ;o numero fica armazenado em BX
         SHL	    BX, 1   	;abre espaço para o novo dígito
         OR      BL, AL  	;insere o dígito no LSB de BL
         INT     21h       ;entra novo caracter
-    LOOP INPUT_BINARY_WHILE	;controla o máximo de 16 dígitos
+        LOOP    INPUT_BINARY_WHILE	;controla o máximo de 16 dígitos
     INPUT_BINARY_END:
         RET
 ENDP
@@ -291,7 +291,7 @@ INPUT_DECIMAL_POSITIVE:
     INT     21h
 INPUT_DECIMAL_NUM:
     AND 	AX, 000Fh
-    PUSH 	AX	
+    PUSH 	AX
     MOV 	AX, 10 	
     MUL 	BX 			
     POP 	BX 			

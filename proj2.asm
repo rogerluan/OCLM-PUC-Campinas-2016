@@ -28,11 +28,13 @@ TITLE	proj1
 
     BASE_CHOICE DB '', 10, 'Qual a base?', 10, 'a - Binario', 10, 'b - Decimal', 10, 'c - Hexadecimal', 10, 'Digite: $'
 
-    coord_x DW ?
-    coord_y DW ?
-    spaceship_pos DW ?
-    bullet_pos DW ?
-    has_bullet DW ?
+    coord_x DW 0
+    coord_y DW 0
+    spaceship_pos DW INITIAL_SPACESHIP_POS
+    bullet_pos DW 0
+    has_bullet DW 0
+    score DW 0
+    aliens_alive DW 60
 
     ;objects
     alien1  DB 7,0,0,0,0,0,0,0,0,7
@@ -101,6 +103,25 @@ TITLE	proj1
              DB 1,0,0,0,0,0,0,0,0,1
              DB 1,0,0,0,0,0,0,0,0,1
 
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;            criar mais 2 boulders ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;
+            ;
+
+
     spaceship   DB 0,0,0,0,0,0,0,0,0,0
                 DB 0,0,0,0,9,9,0,0,0,0
                 DB 0,0,0,0,9,9,0,0,0,0
@@ -165,9 +186,7 @@ TITLE	proj1
     jmp MAIN
 
 MAIN:
-    setup: 
-        mov spaceship_pos, INITIAL_SPACESHIP_POS
-
+    call print_matrix
     main_infinite_loop:
         call check_keystroke
         jmp main_infinite_loop
@@ -264,9 +283,6 @@ proc did_press_key
     mov ah, 00h ; get the keystroke
     int 16h
 
-    ; `a` and `d` ~> Movement
-    ; Space ~> Shot
-    ; Esc ~> Quit
     cmp al, 61h ;checks if key was `a`
     je did_press_key_move_left
     cmp al, 64h ;checks if key was `d`
@@ -279,19 +295,19 @@ proc did_press_key
         cmp spaceship_pos, LEFT_SPACESHIP_MARGIN
         je did_press_key_end
         mov bx, spaceship_pos
-        mov game_matrix[bx], 0 ;0 => number for blank space in my matrix
+        mov game_matrix[bx], ID_BLANK
         dec bx
         mov spaceship_pos, bx
-        mov game_matrix[bx], 4 ;4 => number for spaceship in my matrix
+        mov game_matrix[bx], ID_SPACESHIP
         jmp did_press_key_end
     did_press_key_move_right:
         cmp spaceship_pos, RIGHT_SPACESHIP_MARGIN
         je  did_press_key_end
         mov bx, spaceship_pos
-        mov game_matrix[bx], 0
+        mov game_matrix[bx], ID_BLANK
         inc bx
         mov spaceship_pos, bx
-        mov game_matrix[bx], 4
+        mov game_matrix[bx], ID_SPACESHIP
         jmp did_press_key_end
     did_press_key_shooting:
         cmp has_bullet, 1
@@ -306,45 +322,46 @@ proc did_press_key
 endp did_press_key
 
 proc shoot_action
+    sub score, 5
+
     mov has_bullet, 1
     mov bx, spaceship_pos
     sub bx, 32
-    cmp game_matrix[bx], 0
+    cmp game_matrix[bx], ID_BLANK
     jne shoot_action_hit
-    mov game_matrix[bx], 5
+    mov game_matrix[bx], ID_BULLET
     shoot_action_loop:
         call print_matrix
-        mov game_matrix[bx], 0
+        mov game_matrix[bx], ID_BLANK
         sub bx, 32
-        cmp game_matrix[bx], 0
+        cmp game_matrix[bx], ID_BLANK
         jne shoot_action_hit
         cmp bx, 0
         jle shoot_action_loop_end
-        mov game_matrix[bx], 5
+        mov game_matrix[bx], ID_BULLET
         jmp shoot_action_loop
         shoot_action_hit:
-            cmp game_matrix[bx], 4
-            jl shoot_action_hit_alien
-            cmp game_matrix[bx], 5
-            jg shoot_action_hit_boulder
+            cmp game_matrix[bx], ID_ALIEN3
+            jle shoot_action_hit_alien
+            cmp game_matrix[bx], ID_BOULDER1
+            jge shoot_action_hit_boulder
             shoot_action_hit_alien:
-            mov game_matrix[bx], 0
             call did_hit_alien
             jmp shoot_action_loop_end
             shoot_action_hit_boulder:
-            cmp game_matrix[bx], 6
+            cmp game_matrix[bx], ID_BOULDER1
             je shoot_action_hit_boulder1
-            cmp game_matrix[bx], 7
+            cmp game_matrix[bx], ID_BOULDER2
             je shoot_action_hit_boulder2
             jmp shoot_action_hit_boulder3
                 shoot_action_hit_boulder1:
-                mov game_matrix[bx], 7
+                mov game_matrix[bx], ID_BOULDER2
                 jmp shoot_action_loop_end
                 shoot_action_hit_boulder2:
-                mov game_matrix[bx], 8
+                mov game_matrix[bx], ID_BOULDER3
                 jmp shoot_action_loop_end
                 shoot_action_hit_boulder3:
-                mov game_matrix[bx], 0
+                mov game_matrix[bx], ID_BLANK
                 jmp shoot_action_loop_end
     shoot_action_loop_end:
         mov has_bullet, 0
@@ -352,8 +369,41 @@ proc shoot_action
 endp shoot_action
 
 proc did_hit_alien
+    ;adds the correct alien score
+    cmp game_matrix[bx], ID_ALIEN1
+    je did_hit_alien1
+    cmp game_matrix[bx], ID_ALIEN2
+    je did_hit_alien2
+    jmp did_hit_alien3
+        did_hit_alien1:
+            add score, 20
+        did_hit_alien2:
+            add score, 40
+        did_hit_alien3:
+            add score, 60
+    mov game_matrix[bx], ID_BLANK
+
+    ;decrements the aliens_alive counter
+    dec aliens_alive
+
+    ;checks if this was the last alien alive
+    cmp aliens_alive, 0
+    je did_hit_last_alien
     ret
+    did_hit_last_alien:
+    call game_over
 endp did_hit_alien
+
+proc game_over
+    cmp aliens_alive, 0
+    je game_over_win
+    ;game lost
+
+    game_over_win:
+
+
+    ret
+endp
 
 proc delay
         mov cx, 003H

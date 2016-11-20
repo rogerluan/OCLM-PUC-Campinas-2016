@@ -43,8 +43,6 @@ TITLE	proj1
     aliens_alive DW TOTAL_ALIENS
     lives DW 3
     matrix_index DW 0
-    get_coordinate_x DW 0
-    get_coordinate_y DW 0
 
     ;objects
     alien1  DB 10,0,0,0,0,0,0,0,0,10
@@ -213,19 +211,19 @@ TITLE	proj1
 .CODE
     mov ax, @DATA   ;prepare to use .DATA variables and constants
     mov ds, ax
-
     mov ax, 13h     ;change the video mode
-    int 10h         ;interruption to apply the changes
-
+    int 10h
     jmp MAIN
 
 MAIN:
     call restart_game
 
+    ;infinite loop that constantly checks for keystrokes
     main_infinite_loop:
         call check_keystroke
         jmp main_infinite_loop
 
+;reset all the game information back to the game start
 proc restart_game
     push ax
     push bx
@@ -248,12 +246,14 @@ proc restart_game
     ret
 endp restart_game
 
+;prints the whole matrix and status bar
 proc refresh_screen
     call print_matrix
     call print_status_bar
     ret
 endp refresh_screen
 
+;prints the status bar (which includes the player's lives and score)
 proc print_status_bar
     push bx
 
@@ -341,6 +341,7 @@ proc update_matrix_at_index
     ret
 endp update_matrix_at_index
 
+;calculates the (x,y) coordinates for a given matrix index (which must be stored in BX)
 proc get_coordinate_by_index
     push ax
     push cx
@@ -368,6 +369,7 @@ proc get_coordinate_by_index
     ret
 endp get_coordinate_by_index
 
+;prints the whole matrix 
 proc print_matrix
     mov coord_x, 0 ;x coordinate
     mov coord_y, 0 ;y coordinate
@@ -393,7 +395,7 @@ proc print_matrix
         ret
 endp print_matrix
 
-;loads SI with the object contained in index BX from matrix
+;loads SI with the object contained in a given matrix index (which must be stored in BX)
 proc read_matrix_object
     mov al, game_matrix[bx]
     cmp al, ID_BLANK
@@ -456,7 +458,7 @@ proc read_matrix_object
     ret
 endp read_matrix_object
 
-;print_object - si must contain the object to be printed
+;prints the object contained in SI, at (coord_x, coord_y) coordinates
 proc print_object
     push ax
     push bx
@@ -488,6 +490,7 @@ proc print_object
     ret
 endp print_object
 
+;checks if any key was pressed
 proc check_keystroke
     mov ah, 01h ; checks if a key is pressed
     int 16h
@@ -497,6 +500,7 @@ proc check_keystroke
     ret
 endp check_keystroke
 
+;action for a key press
 proc did_press_key
     mov ah, 00h ; get the keystroke
     int 16h
@@ -546,6 +550,7 @@ proc did_press_key
         ret
 endp did_press_key
 
+;action for a shot
 proc shoot_action
     sub score, SHOOT_SCORE_COST
 
@@ -594,6 +599,7 @@ proc shoot_action
         ret
 endp shoot_action
 
+;action for an alien hit
 proc did_hit_alien
     ;adds the correct alien score
     cmp game_matrix[bx], ID_ALIEN1
@@ -623,6 +629,7 @@ proc did_hit_alien
     ret
 endp did_hit_alien
 
+;prints the game over screen and receives the player decision to play again or quit
 proc game_over
     call print_game_over
     mov ah, 1
@@ -637,6 +644,7 @@ proc game_over
     ret
 endp
 
+;prints the game ove screen
 proc print_game_over
     call clear_screen
     
@@ -661,20 +669,22 @@ proc print_game_over
     ret
 endp print_game_over
 
+;sleeps for about 250ms
 proc delay
-        mov cx, 003H
+    mov cx, 003H
     delayRep: 
-        push cx
-        mov cx, 0D090H
+    push cx
+    mov cx, 0D090H
     delayDec: 
-        dec cx
-        jnz delayDec
-        pop cx
-        dec cx
-        jnz delayRep
-        ret
+    dec cx
+    jnz delayDec
+    pop cx
+    dec cx
+    jnz delayRep
+    ret
 endp delay
 
+;clears the screen
 proc clear_screen
     mov ax, 0A000h
     mov es, ax
@@ -686,6 +696,7 @@ proc clear_screen
     ret
 endp clear_screen
 
+;quit the game
 EXIT: 
     mov ax, 3       ;restore the video mode to original
     int 10h         

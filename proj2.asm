@@ -670,20 +670,19 @@ endp did_hit_spaceship
 proc destroy_spaceship
     mov game_matrix[bx], ID_DESTROYED_SPACESHIP
     call update_matrix_at_index
-    call delay
+    call sleep250ms
     mov game_matrix[bx], ID_SPACESHIP
     call update_matrix_at_index
-    call delay
+    call sleep250ms
     mov game_matrix[bx], ID_DESTROYED_SPACESHIP
     call update_matrix_at_index
-    call delay
+    call sleep250ms
     mov game_matrix[bx], ID_BLANK
     call update_matrix_at_index
-    ;delay 1 second
-    call delay
-    call delay
-    call delay
-    call delay
+    call sleep250ms
+    call sleep250ms
+    call sleep250ms
+    call sleep250ms
     ret
 endp destroy_spaceship
 
@@ -848,22 +847,39 @@ proc fire_alien_shoot
         ret
 endp fire_alien_shoot
 
-;sleeps for about 250ms
+;sleeps for about 30ms
 proc delay
     push cx
     mov cx, 003H
-    delayRep: 
+    delay_rep: 
     push cx
     mov cx, 7500
-    delayDec: 
+    delay_dec: 
     dec cx
-    jnz delayDec
+    jnz delay_dec
     pop cx
     dec cx
-    jnz delayRep
+    jnz delay_rep
     pop cx
     ret
 endp delay
+
+;sleeps for about 250ms
+proc sleep250ms
+    push cx
+    mov cx, 003H
+    sleep250ms_rep: 
+    push cx
+    mov cx, 65000
+    sleep250ms_dec: 
+    dec cx
+    jnz sleep250ms_dec
+    pop cx
+    dec cx
+    jnz sleep250ms_rep
+    pop cx
+    ret
+endp sleep250ms
 
 ;clears the screen
 proc clear_screen

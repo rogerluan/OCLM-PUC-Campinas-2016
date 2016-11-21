@@ -21,6 +21,7 @@ TITLE	proj1
     ID_BOULDER3 equ 8
     ID_BOULDER4 equ 9
     ID_BOULDER5 equ 10
+    ID_DESTROYED_SPACESHIP equ 11
 
     TOTAL_ALIENS equ 60
     SHOOT_SCORE_COST equ 5
@@ -31,8 +32,8 @@ TITLE	proj1
     RIGHT_SPACESHIP_MARGIN equ 607 ;right wall position
 
     STATUS_BAR DB 'Lives:                      Score:      $'
-    GAME_OVER_WIN_MSG DB 'You win. Press ESC to quit, or any other key to play again.$'
-    GAME_OVER_LOSE_MSG DB 'Game over! You lose. Press ESC to quit, or any other key to play again.$'
+    GAME_OVER_WIN_MSG DB '                You won!', 10, 10, 10, 10, '           Press ESC to quit,', 10,'           or any other key', 10,'            to play again.$'
+    GAME_OVER_LOSE_MSG DB '          Game over! You lost.', 10, 10, '           Press ESC to quit,', 10,'           or any other key', 10,'            to play again.$'
 
     coord_x DW 0
     coord_y DW 0
@@ -144,6 +145,17 @@ TITLE	proj1
                 DB 0,9,9,9,9,9,9,9,9,0
                 DB 0,0,0,0,0,0,0,0,0,0
 
+    destroyed_spaceship DB 9,0,0,9,0,0,9,0,0,9
+                        DB 0,9,0,0,9,9,0,0,9,0
+                        DB 0,0,9,0,9,9,0,9,0,0
+                        DB 9,9,0,9,0,0,9,0,9,9
+                        DB 0,0,9,0,9,9,0,9,0,0
+                        DB 0,0,9,0,9,9,0,9,0,0
+                        DB 9,9,0,9,0,0,9,0,9,9
+                        DB 0,0,9,0,9,9,0,9,0,0
+                        DB 0,9,0,0,9,9,0,0,9,0
+                        DB 9,0,0,9,0,0,9,0,0,9
+
     bullet  DB 0,0,0,0,1,1,0,0,0,0
             DB 0,0,0,0,1,1,0,0,0,0
             DB 0,0,0,0,1,1,0,0,0,0
@@ -220,6 +232,7 @@ MAIN:
 
     ;infinite loop that constantly checks for keystrokes
     main_infinite_loop:
+        call alien_random_shoot
         call check_keystroke
         jmp main_infinite_loop
 
@@ -239,6 +252,7 @@ proc restart_game
     mov spaceship_pos, INITIAL_SPACESHIP_POS
     mov has_bullet, 0
     mov score, 0
+    mov lives, 3
     mov aliens_alive, TOTAL_ALIENS
     call refresh_screen
     pop bx
@@ -283,6 +297,8 @@ proc print_status_bar
     ;prints lives
     mov bx, 55
     mov cx, lives
+    cmp cx, 0
+    jle print_status_bar_end
     print_status_bar_loop:
         mov coord_x, bx
         mov coord_y, 0
@@ -290,7 +306,7 @@ proc print_status_bar
         call print_object
         add bx, 15
         loop print_status_bar_loop
-
+    print_status_bar_end:
     pop bx
     ret
 endp print_status_bar
@@ -420,6 +436,8 @@ proc read_matrix_object
     je read_matrix_object_bullet
     cmp al, ID_SPACESHIP
     je read_matrix_object_spaceship
+    cmp al, ID_DESTROYED_SPACESHIP
+    je read_matrix_object_destroyed_spaceship
     jmp read_matrix_object_end
 
     read_matrix_object_blank:
@@ -451,6 +469,9 @@ proc read_matrix_object
         jmp read_matrix_object_end
     read_matrix_object_spaceship:
         lea si, spaceship
+        jmp read_matrix_object_end
+    read_matrix_object_destroyed_spaceship:
+        lea si, destroyed_spaceship
         jmp read_matrix_object_end
     read_matrix_object_bullet:
         lea si, bullet
@@ -562,7 +583,7 @@ proc shoot_action
     mov game_matrix[bx], ID_BULLET
     call update_matrix_at_index
     shoot_action_loop:
-        ; call delay
+        call delay
         mov game_matrix[bx], ID_BLANK
         call update_matrix_at_index
         sub bx, 32
@@ -607,14 +628,13 @@ proc did_hit_alien
     cmp game_matrix[bx], ID_ALIEN2
     je did_hit_alien2
     jmp did_hit_alien3
-        did_hit_alien3:
-            add score, ALIEN_SCORE
-        did_hit_alien2:
-            add score, ALIEN_SCORE
-        did_hit_alien1:
-            add score, ALIEN_SCORE
+    did_hit_alien3:
+        add score, ALIEN_SCORE
+    did_hit_alien2:
+        add score, ALIEN_SCORE
+    did_hit_alien1:
+        add score, ALIEN_SCORE
     mov game_matrix[bx], ID_BLANK
-    ; call update_matrix_at_index
 
     ;decrements the aliens_alive counter
     dec aliens_alive
@@ -629,6 +649,44 @@ proc did_hit_alien
     ret
 endp did_hit_alien
 
+;action for a spaceship hit
+proc did_hit_spaceship
+    cmp lives, 0
+    jg did_hit_spaceship_decrement_life
+    call game_over
+    jmp did_hit_spaceship_end
+    did_hit_spaceship_decrement_life:
+    dec lives
+    call print_status_bar
+    call destroy_spaceship
+    mov spaceship_pos, INITIAL_SPACESHIP_POS
+    mov game_matrix[INITIAL_SPACESHIP_POS], ID_SPACESHIP
+    mov bx, INITIAL_SPACESHIP_POS
+    did_hit_spaceship_end:
+    ret
+endp did_hit_spaceship
+
+;animates the spaceship destruction
+proc destroy_spaceship
+    mov game_matrix[bx], ID_DESTROYED_SPACESHIP
+    call update_matrix_at_index
+    call delay
+    mov game_matrix[bx], ID_SPACESHIP
+    call update_matrix_at_index
+    call delay
+    mov game_matrix[bx], ID_DESTROYED_SPACESHIP
+    call update_matrix_at_index
+    call delay
+    mov game_matrix[bx], ID_BLANK
+    call update_matrix_at_index
+    ;delay 1 second
+    call delay
+    call delay
+    call delay
+    call delay
+    ret
+endp destroy_spaceship
+
 ;prints the game over screen and receives the player decision to play again or quit
 proc game_over
     call print_game_over
@@ -642,17 +700,17 @@ proc game_over
     game_over_decision_continue:
         call restart_game
     ret
-endp
+endp game_over
 
 ;prints the game ove screen
 proc print_game_over
     call clear_screen
     
-    ;moves the cursor to coordinate (5,7)
+    ;moves the cursor to coordinate (0,10)
     mov ah, 2h
     mov bh, 0
-    mov dh, 7
-    mov dl, 5
+    mov dh, 10
+    mov dl, 0
     int 10h
 
     mov ah, SYS_PRINT_STR
@@ -669,18 +727,141 @@ proc print_game_over
     ret
 endp print_game_over
 
+;randomizes a chance that the nearest alien will shoot at the spaceship
+proc alien_random_shoot
+    call random_number
+    cmp al, 1
+    jge alien_random_shoot_end
+    mov ax, spaceship_pos
+    mov cx, 32
+    div cx ; ax <- spaceship_pos/32; dx<-rest
+    cmp dx, 6
+    jle alien_random_shoot_row1
+    cmp dx, 24
+    jge alien_random_shoot_row10
+    jmp alien_random_shoot_below_aliens
+    alien_random_shoot_row1:
+        mov dx, 6
+        jmp alien_random_shoot_unshielded
+    alien_random_shoot_row10:
+        mov dx, 24
+        jmp alien_random_shoot_unshielded
+    alien_random_shoot_below_aliens:
+        ;parity flag jump didn't work here. Idk why.
+        mov al, dl
+        and al, 00000001b ;check if the column number is odd/pair
+        cmp al, 0
+        je alien_random_shoot_unshielded
+        push dx
+        call random_number
+        pop dx
+        cmp al, 5
+        jge alien_random_shoot_below_aliens_right_alien
+        dec dx ;dx holds the matrix column index to be fired
+        jmp alien_random_shoot_unshielded
+        alien_random_shoot_below_aliens_right_alien:
+        inc dx
+        alien_random_shoot_unshielded:
+        call calculate_lowest_alien_position
+        sub bx, 32 ;check if there is an alien to shoot in that row
+        cmp game_matrix[bx], ID_BLANK ;if there isn't, it shouldn't shoot
+        je alien_random_shoot_end
+        add bx, 32 ;if there is, shoot :)
+        call fire_alien_shoot
+    alien_random_shoot_end:
+    ret
+endp alien_random_shoot
+
+;generates a random number between 0-9 (and place it in al)
+proc random_number
+    ;interruption to get time
+    ;ch <- hours (0-23)
+    ;cl <- minutes (0-59)
+    ;dh <- seconds (0-59)
+    ;dl <- hundredths (0-99)
+    mov ah, 2ch
+    int 21h
+    mov al, dl
+    xor dx, dx
+    cbw
+    mov bx, 10
+    div bx ;al <- random number 0-9
+    ret
+endp random_number
+
+;calculates the lowest alien position, position which must be held in dx
+proc calculate_lowest_alien_position
+    mov bx, dx
+    add bx, 96                              ;starts the comparison at the 4th row because it's the highest alien position
+    mov cx, 5                               ;max number of loops, because there're max 6 rows of aliens
+    cmp game_matrix[bx], ID_BLANK
+    je calculate_lowest_alien_position_end  ;there're no aliens in that row at all
+    calculate_lowest_alien_position_loop:
+    add bx, 32
+    cmp game_matrix[bx], ID_BLANK
+    je calculate_lowest_alien_position_end
+    dec cx
+    loop calculate_lowest_alien_position_loop
+    add bx, 32                              ;performance increase
+    calculate_lowest_alien_position_end:
+    ret
+endp
+
+;fires a shot from a given index (which is stored in matrix_index)
+proc fire_alien_shoot
+    cmp game_matrix[bx], ID_BLANK
+    jne fire_alien_shoot_hit
+    mov game_matrix[bx], ID_BULLET
+    call update_matrix_at_index
+    fire_alien_shoot_loop:
+        call delay
+        mov game_matrix[bx], ID_BLANK
+        call update_matrix_at_index
+        add bx, 32
+        cmp game_matrix[bx], ID_BLANK
+        jne fire_alien_shoot_hit
+        cmp bx, 640
+        jge fire_alien_shoot_loop_end
+        mov game_matrix[bx], ID_BULLET
+        call update_matrix_at_index
+        jmp fire_alien_shoot_loop
+    fire_alien_shoot_hit:
+        cmp game_matrix[bx], ID_BOULDER1
+        jge fire_alien_shoot_hit_boulder
+        fire_alien_shoot_hit_spaceship:
+        call did_hit_spaceship
+        call update_matrix_at_index
+        jmp fire_alien_shoot_loop_end
+        fire_alien_shoot_hit_boulder:
+        mov al, game_matrix[bx]
+        cmp al, ID_BOULDER5
+        je fire_alien_shoot_hit_boulder5
+        inc al
+        mov game_matrix[bx], al
+        call update_matrix_at_index
+        jmp fire_alien_shoot_loop_end
+            fire_alien_shoot_hit_boulder5:
+            mov game_matrix[bx], ID_BLANK
+            call update_matrix_at_index
+            jmp fire_alien_shoot_loop_end
+    fire_alien_shoot_loop_end:
+        ret
+endp fire_alien_shoot
+
 ;sleeps for about 250ms
 proc delay
+    push cx
     mov cx, 003H
     delayRep: 
     push cx
-    mov cx, 0D090H
+    mov cx, 7500
     delayDec: 
     dec cx
     jnz delayDec
     pop cx
     dec cx
     jnz delayRep
+    pop cx
     ret
 endp delay
 
